@@ -1,0 +1,17 @@
+syntax = "proto3";
+option go_package="./genproto";
+
+service Chat {
+    rpc ChatA (stream Request) returns (stream Response);
+    rpc ChatB (stream Request) returns (stream Response);
+    rpc ChatC (stream Request) returns (stream Response);
+}
+
+message Request {
+    string tag = 1;
+    string mess = 2;
+}
+
+message Response {
+    string mess = 2;
+}
