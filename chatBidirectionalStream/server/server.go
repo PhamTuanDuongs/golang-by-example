@@ -100,6 +100,52 @@ func (c *chatService) ChatB(ch chat.Chat_ChatBServer) error {
 
 }
 
+func (c *chatService) ChatC(ch chat.Chat_ChatCServer) error {
+	startTime := time.Now()
+
+	//	Create a channel to store values be sent from the client
+	storeValue := make(chan string)
+
+	// goroutine to handle sending messages to the client
+	go func(receiveOnlyValue chan string, ctx context.Context) {
+		for {
+			cout := 1
+			select {
+			case msg := <-receiveOnlyValue:
+				err := ch.Send(&chat.Response{
+					Mess: msg,
+				})
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					fmt.Println("send to B done")
+				}
+				elapsedTime := time.Since(startTime)
+				log.Printf("Request processed in %s", elapsedTime)
+				fmt.Println("Receive from B")
+			case <-ctx.Done():
+				fmt.Println("Ngat ket noi nhe")
+				return
+			}
+			cout++
+			fmt.Println(cout)
+		}
+	}(storeValue, ch.Context())
+
+	for {
+		c.mut.Lock()
+		value, ok := c.CacheMessage["B"]
+		c.mut.Unlock()
+		if len(value) > 0 && ok {
+			storeValue <- value
+			c.mut.Lock()
+			c.CacheMessage["B"] = ""
+			c.mut.Unlock()
+		}
+	}
+
+}
+
 func main() {
 	listen, err := net.Listen("tcp", ":9999")
 	if err != nil {
