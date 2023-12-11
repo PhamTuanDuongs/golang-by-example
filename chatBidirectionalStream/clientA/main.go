@@ -23,7 +23,7 @@ func main() {
 	done := make(chan bool)
 
 	// create stream
-	client := chat.NewChatClient(conn)
+	client := chat.NewServiceChatClient(conn)
 	stream, err := client.ChatA(context.Background())
 	if err != nil {
 		log.Fatalf("openn stream error %v", err)

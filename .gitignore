@@ -1,7 +1,7 @@
 # Ignore a specific directory and its contents
+/chatBidirectionalStream/genproto/
 /C++client/cmake/
 /C++client/proto/
-/chatBidirectionalStream/genproto/
 /bidirectionalgRPC/genproto/
 /simplegRPC/proto/
 

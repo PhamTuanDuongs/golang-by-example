@@ -15,12 +15,13 @@ import (
 // Create a chatService struct
 type chatService struct {
 	CacheMessage map[string]string
-	chat.UnimplementedChatServer
+	chat.UnimplementedServiceChatServer
 	mut sync.Mutex
 }
 
 // func to receive and send message to clientA
-func (c *chatService) ChatA(ch chat.Chat_ChatAServer) error {
+func (c *chatService) ChatA(ch chat.ServiceChat_ChatAServer) error {
+	fmt.Println("Have connection from client A")
 	startTime := time.Now()
 
 	msg, err := ch.Recv()
@@ -54,7 +55,8 @@ func (c *chatService) ChatA(ch chat.Chat_ChatAServer) error {
 }
 
 // func to receive and send message to clientB
-func (c *chatService) ChatB(ch chat.Chat_ChatBServer) error {
+func (c *chatService) ChatB(ch chat.ServiceChat_ChatBServer) error {
+	fmt.Println("Have connection from client B")
 	startTime := time.Now()
 
 	//	Create a channel to store values be sent from the client
@@ -100,7 +102,8 @@ func (c *chatService) ChatB(ch chat.Chat_ChatBServer) error {
 
 }
 
-func (c *chatService) ChatC(ch chat.Chat_ChatCServer) error {
+func (c *chatService) ChatC(ch chat.ServiceChat_ChatCServer) error {
+	fmt.Println("Have connection from Client C")
 	startTime := time.Now()
 
 	//	Create a channel to store values be sent from the client
@@ -118,13 +121,11 @@ func (c *chatService) ChatC(ch chat.Chat_ChatCServer) error {
 				if err != nil {
 					fmt.Println(err)
 				} else {
-					fmt.Println("send to B done")
+					fmt.Println("send to C done")
 				}
 				elapsedTime := time.Since(startTime)
 				log.Printf("Request processed in %s", elapsedTime)
-				fmt.Println("Receive from B")
 			case <-ctx.Done():
-				fmt.Println("Ngat ket noi nhe")
 				return
 			}
 			cout++
@@ -134,12 +135,12 @@ func (c *chatService) ChatC(ch chat.Chat_ChatCServer) error {
 
 	for {
 		c.mut.Lock()
-		value, ok := c.CacheMessage["B"]
+		value, ok := c.CacheMessage["C"]
 		c.mut.Unlock()
 		if len(value) > 0 && ok {
 			storeValue <- value
 			c.mut.Lock()
-			c.CacheMessage["B"] = ""
+			c.CacheMessage["C"] = ""
 			c.mut.Unlock()
 		}
 	}
@@ -155,7 +156,7 @@ func main() {
 	server := grpc.NewServer()
 
 	// Call Register ChatServer from protobuf
-	chat.RegisterChatServer(server, &chatService{
+	chat.RegisterServiceChatServer(server, &chatService{
 		CacheMessage: map[string]string{},
 		mut:          sync.Mutex{},
 	})

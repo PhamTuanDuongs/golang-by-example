@@ -17,7 +17,7 @@ func main() {
 	}
 	stuck := make(chan bool)
 	// create stream
-	client := chat.NewChatClient(conn)
+	client := chat.NewServiceChatClient(conn)
 	chReceiVal := make(chan string)
 	clientB, err := client.ChatB(context.Background())
 	go func() {
