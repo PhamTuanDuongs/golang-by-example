@@ -22,42 +22,43 @@ type chatService struct {
 // func to receive and send message to clientA
 func (c *chatService) ChatA(ch chat.ServiceChat_ChatAServer) error {
 	fmt.Println("Have connection from client A")
-	startTime := time.Now()
-
 	msg, err := ch.Recv()
+
 	if err != nil {
 		log.Println(err)
-		log.Println("Co loi ro")
 		return err
 	}
 	fmt.Println("Message is received from A " + msg.Mess)
 	c.mut.Lock()
-	// write receiver message
+
+	// add an new element to map
 	c.CacheMessage[msg.GetTag()] = msg.Mess
 	c.mut.Unlock()
+
 	value, ok := c.CacheMessage["A"]
 	if ok && value != "" {
+		startTime := time.Now()
 		errSend := ch.Send(&chat.Response{
-			Mess: "Xin chao client " + msg.Tag + ": " + " toi la server A day",
+			Mess: "Hi client " + msg.Tag + ": " + " I am server A",
 		})
 		if errSend != nil {
 			fmt.Println(errSend)
 		} else {
+			elapsedTime := time.Since(startTime)
+			log.Printf("Request processed in %s", elapsedTime)
 			fmt.Println("send to A done")
 			c.mut.Lock()
 			c.CacheMessage["A"] = ""
 			c.mut.Unlock()
 		}
 	}
-	elapsedTime := time.Since(startTime)
-	log.Printf("Request processed in %s", elapsedTime)
+
 	return nil
 }
 
 // func to receive and send message to clientB
 func (c *chatService) ChatB(ch chat.ServiceChat_ChatBServer) error {
 	fmt.Println("Have connection from client B")
-	startTime := time.Now()
 
 	//	Create a channel to store values be sent from the client
 	storeValue := make(chan string)
@@ -65,9 +66,9 @@ func (c *chatService) ChatB(ch chat.ServiceChat_ChatBServer) error {
 	// goroutine to handle sending messages to the client
 	go func(receiveOnlyValue chan string, ctx context.Context) {
 		for {
-			cout := 1
 			select {
 			case msg := <-receiveOnlyValue:
+				startTime := time.Now()
 				err := ch.Send(&chat.Response{
 					Mess: msg,
 				})
@@ -75,16 +76,13 @@ func (c *chatService) ChatB(ch chat.ServiceChat_ChatBServer) error {
 					fmt.Println(err)
 				} else {
 					fmt.Println("send to B done")
+					elapsedTime := time.Since(startTime)
+					log.Printf("Request processed in %s", elapsedTime)
 				}
-				elapsedTime := time.Since(startTime)
-				log.Printf("Request processed in %s", elapsedTime)
-				fmt.Println("Receive from B")
 			case <-ctx.Done():
-				fmt.Println("Ngat ket noi nhe")
+				fmt.Println(ctx.Err().Error() + " B")
 				return
 			}
-			cout++
-			fmt.Println(cout)
 		}
 	}(storeValue, ch.Context())
 
@@ -104,7 +102,6 @@ func (c *chatService) ChatB(ch chat.ServiceChat_ChatBServer) error {
 
 func (c *chatService) ChatC(ch chat.ServiceChat_ChatCServer) error {
 	fmt.Println("Have connection from Client C")
-	startTime := time.Now()
 
 	//	Create a channel to store values be sent from the client
 	storeValue := make(chan string)
@@ -115,17 +112,19 @@ func (c *chatService) ChatC(ch chat.ServiceChat_ChatCServer) error {
 			cout := 1
 			select {
 			case msg := <-receiveOnlyValue:
+				startTime := time.Now()
 				err := ch.Send(&chat.Response{
 					Mess: msg,
 				})
 				if err != nil {
 					fmt.Println(err)
 				} else {
-					fmt.Println("send to C done")
+					fmt.Println("sent to C")
+					elapsedTime := time.Since(startTime)
+					log.Printf("Request processed in %s", elapsedTime)
 				}
-				elapsedTime := time.Since(startTime)
-				log.Printf("Request processed in %s", elapsedTime)
 			case <-ctx.Done():
+				log.Println(ctx.Err().Error() + " C")
 				return
 			}
 			cout++

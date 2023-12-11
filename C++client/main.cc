@@ -41,7 +41,7 @@ public:
         {
             std::cout << status.error_code() << ": " << status.error_message() << std::endl;
         }
-    }
+    }   
 
 private:
     std::unique_ptr<ServiceChat::Stub> stub_;
