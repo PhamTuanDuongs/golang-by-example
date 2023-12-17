@@ -4,4 +4,7 @@
 /C++client/proto/
 /bidirectionalgRPC/genproto/
 /simplegRPC/proto/
+/kafka-go/out
+/kafka-go/go.sum
+
 

@@ -5,11 +5,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"sync"
 	"time"
-
-	"google.golang.org/grpc"
 )
 
 // Create a chatService struct
@@ -100,69 +97,79 @@ func (c *chatService) ChatB(ch chat.ServiceChat_ChatBServer) error {
 
 }
 
-func (c *chatService) ChatC(ch chat.ServiceChat_ChatCServer) error {
-	fmt.Println("Have connection from Client C")
-
-	//	Create a channel to store values be sent from the client
-	storeValue := make(chan string)
-
-	// goroutine to handle sending messages to the client
-	go func(receiveOnlyValue chan string, ctx context.Context) {
-		for {
-			cout := 1
-			select {
-			case msg := <-receiveOnlyValue:
-				startTime := time.Now()
-				err := ch.Send(&chat.Response{
-					Mess: msg,
-				})
-				if err != nil {
-					fmt.Println(err)
-				} else {
-					fmt.Println("sent to C")
-					elapsedTime := time.Since(startTime)
-					log.Printf("Request processed in %s", elapsedTime)
-				}
-			case <-ctx.Done():
-				log.Println(ctx.Err().Error() + " C")
-				return
-			}
-			cout++
-			fmt.Println(cout)
+func performDangerousOperation(wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Recovered from panic:", r)
 		}
-	}(storeValue, ch.Context())
+	}()
 
-	for {
-		c.mut.Lock()
-		value, ok := c.CacheMessage["C"]
-		c.mut.Unlock()
-		if len(value) > 0 && ok {
-			storeValue <- value
-			c.mut.Lock()
-			c.CacheMessage["C"] = ""
-			c.mut.Unlock()
-		}
+	fmt.Println("Performing dangerous operation")
+
+	// Simulating a panic condition
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		log.Println("Recovered from panic:", r)
+	// 	}
+	// }()
+	// listen, err := net.Listen("tcp", ":9999")
+	// if err != nil {
+	// 	log.Fatalf("Failed to listen: %v", err)
+	// }
+	// // Create a new server from grpc
+	// server := grpc.NewServer()
+
+	// // Call Register ChatServer from protobuf
+	// chat.RegisterChatServer(server, &chatService{
+	// 	CacheMessage: map[string]string{},
+	// 	mut:          sync.Mutex{},
+	// })
+
+	// fmt.Println("Server is listening on port 9999")
+	// if err := server.Serve(listen); err != nil {
+	// 	log.Fatalf("Failed to serve: %v", err)
+	// }
+	// Example function that may panic
+	// performDangerousOperation()
+	arr := [3]int{1, 2, 3}
+
+	// Truy cập phần tử nằm ngoài giới hạn của mảng (index 3)
+	// Điều này sẽ gây panic
+	for i := 0; i < 10; i++ {
+		fmt.Println(arr[i])
 	}
 
+	// This code won't be executed because of the panic
+	fmt.Println("This line will not be reached")
+}
+
+type Person struct {
+	Id int32
 }
 
 func main() {
-	listen, err := net.Listen("tcp", ":9999")
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
-	}
-	// Create a new server from grpc
-	server := grpc.NewServer()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Recovered from panic:", r)
+		}
+	}()
+	// var wg sync.WaitGroup
+	// wg.Add(2)
+	// go performDangerousOperation(&wg)
+	// fmt.Println("This line will not be reached")
+	// fmt.Println("Program continues execution after recovering from panic")
+	// wg.Wait()
 
-	// Call Register ChatServer from protobuf
-	chat.RegisterServiceChatServer(server, &chatService{
-		CacheMessage: map[string]string{},
-		mut:          sync.Mutex{},
-	})
+	// Truy cập thông tin từ con trỏ nil
+	value := Person{2}
+	value = Person{}
 
-	fmt.Println("Server is listening on port 9999")
-	if err := server.Serve(listen); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
+	// Dòng này sẽ không được thực hiện vì đã có panic trước đó
+	fmt.Println(value)
 
 }
+
+/*
+https://stackoverflow.com/questions/25356602/golang-panic-crash-prevention
+*/
