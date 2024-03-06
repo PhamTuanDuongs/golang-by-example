@@ -1,0 +1,1 @@
+exec /app/go-grpc-server
