@@ -6,7 +6,7 @@ import { SocketClient } from "./socket/clientSocket";
 function App() {
   return (
     <div className="App">
-      <Chart message="Xin chao" tag={1} />
+      <h1 className="font-bold text-5xl">Client Socket</h1>
       <SocketClient />
     </div>
   );
