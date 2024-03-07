@@ -1,75 +1,94 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/gin-gonic/gin"
+	"math/rand"
 
-	socketio "github.com/googollee/go-socket.io"
+	"github.com/gorilla/websocket"
 )
 
-func GinMiddleware(allowOrigin string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", allowOrigin)
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, Content-Length, X-CSRF-Token, Token, session, Origin, Host, Connection, Accept-Encoding, Accept-Language, X-Requested-With")
+var upgrader = websocket.Upgrader{
+	ReadBufferSize: 1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {return true},
+}
 
-		if c.Request.Method == http.MethodOptions {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
+type Message struct {
+	ID int 			`json:"id"`
+	Time int64		`json:"time"`
+	Data string		`json:"data"`
+
+}
+
+func handleWebSocket(w http.ResponseWriter, r *http.Request){
+	conn, err := upgrader.Upgrade(w,r,nil)
+	if err != nil {
+		log.Println(err)
+	}
+
+	log.Println("Connected")
+
+	defer conn.Close()
+
+	for {
+		messageType, p, err := conn.ReadMessage()
+		if err != nil {
+			log.Println(err)
 		}
 
-		c.Request.Header.Del("Origin")
+		log.Println("Received message: %s\n", p)
+		if err := conn.WriteMessage(messageType,p); err != nil {
+			log.Println(err)
+			return
+		}
+	}
 
-		c.Next()
+}
+var idCounter = 1
+func sendDataToClient(w http.ResponseWriter, r *http.Request){
+	conn, err := upgrader.Upgrade(w,r,nil)
+	if err != nil {
+		log.Println(err)
+	}
+
+	defer conn.Close()
+	for{
+		
+	// Seed the random number generator with the current time
+	rand.Seed(time.Now().UnixNano())
+
+	// Generate a random integer between 0 and 99
+		randomInt := rand.Intn(100)
+
+		message := Message {
+			ID: idCounter,
+			Time: int64(randomInt),
+			Data: "Xin chao",
+		}
+		idCounter++
+		fmt.Println(randomInt)
+	 // Marshal the Message struct to JSON
+		jsonData, err := json.Marshal(message)
+		if err != nil {
+			fmt.Println("Error marshalling JSON:", err)
+			return
+		}
+		// Send the message to the client
+		if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
+			log.Println(err)
+			return
+		}
 	}
 }
 
-func main() {
-	router := gin.New()
 
-	server := socketio.NewServer(nil)
-
-	server.OnConnect("/", func(s socketio.Conn) error {
-		s.SetContext("")
-		fmt.Println("connected:", s.ID())
-		return nil
-	})
-
-	server.OnEvent("/chat", "msg", func(s socketio.Conn, msg string) string {
-		s.SetContext(msg)
-		return "recv " + msg
-	})
-
-	
-	server.OnEvent("/", "bye", func(s socketio.Conn) string {
-			last := s.Context().(string)
-			s.Emit("bye", last)
-			s.Close()
-			return last
-		})
-
-
-	server.OnDisconnect("/", func(so socketio.Conn, reason string) {
-		log.Println("closed", reason)
-	})
-
-	go func() {
-		if err := server.Serve(); err != nil {
-			log.Fatalf("socketio listen error: %s\n", err)
-		}
-	}()
-	defer server.Close()
-
-	router.Use(GinMiddleware("http://localhost:3000"))
-	router.GET("/socket.io/*any", gin.WrapH(server))
-	router.POST("/socket.io/*any", gin.WrapH(server))
-	router.StaticFS("/public", http.Dir("../asset"))
-
-	if err := router.Run(":8000"); err != nil {
-		log.Fatal("failed run app: ", err)
-	}
+func main(){
+	http.HandleFunc("/ws", handleWebSocket)
+	http.HandleFunc("/sendData", sendDataToClient)
+	log.Fatal(http.ListenAndServe(":8000", nil))
 }
