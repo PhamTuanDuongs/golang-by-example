@@ -49,46 +49,46 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request){
 	}
 
 }
-var idCounter = 1
-func sendDataToClient(w http.ResponseWriter, r *http.Request){
-	conn, err := upgrader.Upgrade(w,r,nil)
+func sendDataToClient(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
+		return
 	}
-
 	defer conn.Close()
-	for{
-		
-	// Seed the random number generator with the current time
-	rand.Seed(time.Now().UnixNano())
 
-	// Generate a random integer between 0 and 99
+	rand.Seed(time.Now().UnixNano())
+	for index := 1; index < 1000; index++ {
+		// Generate a random integer between 0 and 99
 		randomInt := rand.Intn(100)
 
-		message := Message {
-			ID: idCounter,
+		message := Message{
+			ID:   index,
 			Time: int64(randomInt),
 			Data: "Xin chao",
 		}
-		idCounter++
-		fmt.Println(randomInt)
-	 // Marshal the Message struct to JSON
+
+		// Marshal the Message struct to JSON
 		jsonData, err := json.Marshal(message)
 		if err != nil {
 			fmt.Println("Error marshalling JSON:", err)
 			return
 		}
+
 		// Send the message to the client
 		if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
 			log.Println(err)
 			return
 		}
+		fmt.Println(message)
 	}
 }
 
 
 func main(){
 	http.HandleFunc("/ws", handleWebSocket)
-	http.HandleFunc("/sendData", sendDataToClient)
+	http.HandleFunc("/receiveData", sendDataToClient)
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }
+
+// 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
