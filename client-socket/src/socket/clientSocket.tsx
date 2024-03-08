@@ -1,42 +1,38 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useWebSocket from "react-use-websocket";
 import { TypeMessage } from "../chart/types";
 import { Chart } from "../chart/chart";
 
-const socketUrl = "ws://localhost:8000/sendData";
+const socketUrl = process.env.REACT_APP_WEBSOCKET_URL as string;
 export const SocketClient = () => {
-  const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl);
-  const [messageHistory, setMessageHistory] = useState([]);
   const [message, setMessage] = useState<TypeMessage[]>([]);
-  useEffect(() => {
-    if (lastMessage != null) {
-      try {
-        const receivedData = lastMessage.data;
-        const parsedTypeMessage: TypeMessage = JSON.parse(
-          receivedData
-        ) as TypeMessage;
-        setMessage((prev) => prev.concat(parsedTypeMessage));
-        console.log(parsedTypeMessage);
-      } catch (error) {
-        console.log(error);
-      }
-    }
-  }, [lastMessage]);
+  const { lastMessage, readyState } = useWebSocket(socketUrl, {
+    onOpen: () => {
+      console.log("Websocket connection established.");
+    },
+    onMessage: (message) => {
+      const parsedTypeMessage: TypeMessage = JSON.parse(
+        message.data
+      ) as TypeMessage;
+      setMessage((prev) => prev.concat(parsedTypeMessage));
+    },
+
+    shouldReconnect: (closeEvent) => false,
+  });
 
   return (
-    <div className="flex justify-center">
+    <div>
+      <div>State {readyState}</div>
       <Chart message={message} />
-      <div>
+      <ol>
         {message.map((value: TypeMessage, index) => (
-          <div key={index}>
-            <span>ID: {value.id.toString()}</span>
-            <span>Time: {value.time.toString()}</span>
-            <span>Name: {value.data}</span>
-          </div>
+          <li key={index}>
+            {value.id.toString()}--
+            {value.time.toString()}--
+            {value.data}
+          </li>
         ))}
-      </div>
+      </ol>
     </div>
   );
-  // 1. listent for a data event and update the state
-  // 2. Render the line chart using state
 };

@@ -1,6 +1,5 @@
 import React from "react";
 import "./App.css";
-import { Chart } from "./chart/chart";
 import { SocketClient } from "./socket/clientSocket";
 
 function App() {

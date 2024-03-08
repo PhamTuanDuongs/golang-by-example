@@ -1,24 +1,18 @@
-import { maxHeaderSize } from "http";
-import { AppProps, TypeMessage } from "./types";
+import { TypeMessage } from "./types";
 import {
-  BarChart,
-  Bar,
   Line,
   LineChart,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
-  Area,
-  AreaChart,
-  ResponsiveContainer,
   Legend,
 } from "recharts";
-const data = [
-  { name: "Page A", uv: 400, pv: 2400, amt: 3400 },
-  { name: "Page B", uv: 300, pv: 1400, amt: 5400 },
-  { name: "Page C", uv: 200, pv: 400, amt: 6400 },
-];
+// const data = [
+//   { name: "Page A", uv: 400, pv: 2400, amt: 3400 },
+//   { name: "Page B", uv: 300, pv: 1400, amt: 5400 },
+//   { name: "Page C", uv: 200, pv: 400, amt: 6400 },
+// ];
 export const Chart = ({ message }: { message: TypeMessage[] }) => (
   <div>
     <div>
